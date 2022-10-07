@@ -7,7 +7,7 @@ class User(AbstractUser):
     new = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.username    
+        return self.username
 
 
 class Eeee(models.Model):
