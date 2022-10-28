@@ -6,8 +6,7 @@ jobs:
     steps:
       - name: clone code
         uses: actions/checkout@v2
-      - name: docker build calendar_front
-        run: docker build -t 4surpr1se/calendar_front:$GITHUB_REF_NAME-$GITHUB_RUN_ID . #прописать чтобы не билдил, а просто брал, наверное просто убрать отседова?
+      #прописать чтобы не билдил, а просто брал, наверное просто убрать отседова?
       - name: docker build
         run: docker build -t 4surpr1se/calendar_api:$GITHUB_REF_NAME-$GITHUB_RUN_ID .
       - name: docker login
