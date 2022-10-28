@@ -1,0 +1,52 @@
+#TODO Передать envfile на сервер
+version: "3.10"
+services:
+  api:
+    ports:
+    - "8000:8000"
+    image: 4surpr1se/calendar_api:$GITHUB_REF_NAME-$GITHUB_RUN_ID
+    env_file:
+      - .env
+    volumes:
+      - api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+  migrations:
+    image: 4surpr1se/calendar_migrations:v1.0.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python manage.py migrate
+  postgres:
+    environment:
+      POSTGRES_NAME: user
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todolist_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+  frontend:
+    image: 4surpr1se/calendar_front:v1.0.0
+    volumes:
+      - frontend:/app/build
+    depends_on:
+      - postgres
+      - api
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  frontend:
+  api:
