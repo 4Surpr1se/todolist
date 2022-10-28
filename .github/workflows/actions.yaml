@@ -32,24 +32,24 @@ jobs:
           cat docker-compose-server.yaml | envsubst > deploy/docker-compose.yaml
           cat .env-server | envsubst > deploy/.env
       - name: clone files to server
-          uses: appleboy/scp-action@master
-          with:
+        uses: appleboy/scp-action@master
+        with:
             # Эти значения надо вписать в секреты гитхаба
-            host: ${{ secrets.HOST }}
-            username: ${{ secrets.SSH_USERNAME }}
-            password: ${{ secrets.SSH_PASSWORD }}
-            # Указываем, какие файлы копировать
-            source: "deploy/docker-compose.yaml,deploy/.env"
-            # Место на виртуальной машине, куда скопируются файлы
-            target: "calendar"
-            strip_components: 1
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          # Указываем, какие файлы копировать
+          source: "deploy/docker-compose.yaml,deploy/.env"
+          # Место на виртуальной машине, куда скопируются файлы
+          target: "calendar"
+          strip_components: 1
       - name: run docker-compose
-          uses: appleboy/ssh-action@master
-          with:
-            host: ${{ secrets.HOST }}
-            username: ${{ secrets.SSH_USERNAME }}
-            password: ${{ secrets.SSH_PASSWORD }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
             # Переходим в директорию и запускаем через sudo команду docker-compose up
-            script: |
-              cd calendar
-              echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker-compose up -d
+          script: |
+            cd calendar
+            echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker-compose up -d
