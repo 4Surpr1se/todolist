@@ -1,0 +1,54 @@
+#TODO сделать дб, имя и пароль кастомными, что такое volume конкретнее, выполнить совет от разработчика из 2 урока в курсе
+#TODO в интро к этому уроку есть подсказки
+version: "3.10"
+services:
+  api:
+    ports:
+    - "8000:8000"
+    image: calendar-image
+    env_file:
+      - .env
+    volumes:
+      - api:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
+  migrations:
+    build:
+      context: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python manage.py migrate
+  postgres:
+    environment: # Я уже здесь изменил значения на те, что актуальны на локале
+      POSTGRES_USER: olenin
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todolist_db
+      PGDATA: /var/lib/postgresql/data/pgdata
+    image: postgres:latest
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+  frontend:
+    image: frontend_calendar
+    volumes:
+      - frontend:/app/build
+    depends_on:
+      - postgres
+      - api
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  frontend:
+  api:
