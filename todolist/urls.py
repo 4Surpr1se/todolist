@@ -14,7 +14,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from rest_framework import routers
 from django.contrib.auth import login
 from django.contrib.auth.views import LoginView
@@ -33,6 +33,8 @@ urlpatterns = [
     # path('core/login/', LoginView.as_view()),
     path('core/profile', UserRetrieveUpdateDestroyAPIView.as_view()),
     path('core/update_password', PasswordReset.as_view()),
+    path("goals/", include("goals.urls")),
+
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ] + router.urls

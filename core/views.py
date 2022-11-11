@@ -18,7 +18,7 @@ from django.middleware.csrf import get_token
 from django.middleware.csrf import CsrfViewMiddleware
 from django.contrib.auth.backends import ModelBackend
 
-from .serializers import UserGetSerializer, UserCreateSerializer, Serializerer, ResetPasswordSerializer
+from .serializers import UserGetSerializer, UserCreateSerializer, ProfileInfoSerializer, ResetPasswordSerializer
 
 # Create your views here.
 from django.views import View
@@ -138,9 +138,7 @@ class PasswordReset(UpdateAPIView):
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())
-
         obj = queryset.get(pk=self.request.user.pk)
-
         self.check_object_permissions(self.request, obj)
 
         return obj
@@ -159,7 +157,7 @@ class PasswordReset(UpdateAPIView):
 # @method_decorator(csrf_exempt, name='dispatch')
 class UserRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
-    serializer_class = Serializerer
+    serializer_class = ProfileInfoSerializer
     permission_classes = [IsAuthenticated, ]
 
     def destroy(self, request, *args, **kwargs):
@@ -168,9 +166,7 @@ class UserRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())
-
         obj = queryset.get(pk=self.request.user.pk)
-
         self.check_object_permissions(self.request, obj)
 
         return obj

@@ -39,7 +39,7 @@ services:
     ports:
       - "5432:5432"
   frontend:
-    image: frontend_calendar
+    image: sermalenk/skypro-front:lesson-36
     volumes:
       - frontend:/app/build
     depends_on:
