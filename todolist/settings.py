@@ -16,6 +16,7 @@ import django
 import environ
 import os
 # from django.contrib.auth.backends import ModelBackend
+# from goals.permissions import BoardPermissions
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -123,9 +124,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'core.SessionAuthenticationCustom.SessionAuthenticationCustom',
     ],
-    # 'DEFAULT_PERMISSION_CLASSES': [
+    # 'DEFAULT_PERMISSION_CLASSES': (
     #     'rest_framework.permissions.IsAuthenticated',
-    # ],
+    #     'goals.permissions.BoardPermissions'
+    # ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 
 }
