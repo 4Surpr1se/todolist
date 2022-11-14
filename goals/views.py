@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import QuerySet
 from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -21,6 +22,11 @@ class GoalCategoryCreateView(CreateAPIView):
 
 
 class GoalCategoryListView(ListAPIView):
+    """
+    get_queryset method is overwritten for provide only board categories the user is a member of
+    and some ordering, search_fields, filters
+    """
+
     model = GoalCategory
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = GoalCategorySerializer
@@ -35,17 +41,23 @@ class GoalCategoryListView(ListAPIView):
     ordering = ["title"]
     search_fields = ["title"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         return GoalCategory.objects.filter(board__participants__user=self.request.user,
                                            is_deleted=False)  # TODO возсожно надо удалить цель(Удаление цели = архивирование цели (кнопки «Удалить цель» нет).)
 
 
 class GoalCategoryView(RetrieveUpdateDestroyAPIView):
+    """
+    GET returns same queryset as GoalCategoryListView:
+    get_queryset method is overwritten for provide only board categories the user is a member of,
+
+    PUT and DELETE also checks user role in provided Board
+    """
     model = GoalCategory
     serializer_class = GoalCategorySerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         if self.request.method in ['PUT', 'DELETE']:
             return GoalCategory.objects.filter(board__participants__user=self.request.user,
                                                board__participants__role__in=[BoardParticipant.Role.owner,
@@ -54,7 +66,7 @@ class GoalCategoryView(RetrieveUpdateDestroyAPIView):
         return GoalCategory.objects.filter(board__participants__user=self.request.user,
                                            is_deleted=False)
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Board) -> GoalCategory:
         instance.is_deleted = True
         instance.save()
         return instance
@@ -67,6 +79,12 @@ class GoalCreateView(CreateAPIView):
 
 
 class GoalListView(ListAPIView):
+    """
+    get_queryset same as GoalCategoryListView, except for searching it through category field:
+
+    get_queryset method is overwritten for provide only board categories the user is a member of
+    and some ordering, search_fields, filters
+    """
     model = Goal
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = GoalSerializer
@@ -81,16 +99,24 @@ class GoalListView(ListAPIView):
     ordering = ["title"]
     search_fields = ["title"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         return Goal.objects.filter(category__board__participants__user=self.request.user, is_deleted=False)
 
 
 class GoalView(RetrieveUpdateDestroyAPIView):
+    """
+    GET returns same queryset as GoalListView:
+    get_queryset method is overwritten for provide only board categories the user is a member of,
+
+    PUT and DELETE also checks user role in provided Board
+
+    perform_destroy is overwritten to not delete goal from db but just archive it by setting is_deleted flag to True
+    """
     model = Goal
     serializer_class = GoalSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         if self.request.method in ['PUT', 'DELETE']:
             return Goal.objects.filter(category__board__participants__user=self.request.user,
                                        category__board__participants__role__in=[BoardParticipant.Role.owner,
@@ -98,7 +124,7 @@ class GoalView(RetrieveUpdateDestroyAPIView):
                                        is_deleted=False)
         return Goal.objects.filter(category__board__participants__user=self.request.user, is_deleted=False)
 
-    def perform_destroy(self, instance):
+    def perform_destroy(self, instance: Board) -> Goal:
         instance.is_deleted = True
         instance.save()
         return instance
@@ -111,6 +137,10 @@ class GoalCommentCreateView(CreateAPIView):
 
 
 class GoalCommentListView(ListAPIView):
+    """
+    get_queryset method is overwritten for provide only board category goals the user is a member of
+    and some ordering, search_fields, filters
+    """
     model = Goal
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = GoalCommentSerializer
@@ -123,31 +153,39 @@ class GoalCommentListView(ListAPIView):
     ordering_fields = ["created"]
     ordering = ["created"]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         return GoalComment.objects.filter(goal__category__board__participants__user=self.request.user)
 
 
 class GoalCommentView(RetrieveUpdateDestroyAPIView):
+    """
+    get_queryset is overwritten so that users can only delete and update their own comments
+    GET method still gives comments of other users only if the user is a Board participant
+    """
     model = Goal
     serializer_class = GoalCommentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         if self.request.method in ['PUT', 'DELETE']:
             return GoalComment.objects.filter(user=self.request.user)
         return GoalComment.objects.filter(goal__category__board__participants__user=self.request.user)
 
 
 class BoardView(RetrieveUpdateDestroyAPIView):
+    """
+    get_queryset method is overwritten for provide only boards the user is a member of
+    perform_destroy doesn't delete the board, it archives the board and its categories
+    """
     model = Board
     permission_classes = [permissions.IsAuthenticated, BoardPermissions]
     serializer_class = BoardSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         # Обратите внимание на фильтрацию – она идет через participants
         return Board.objects.filter(participants__user=self.request.user, is_deleted=False)
 
-    def perform_destroy(self, instance: Board):
+    def perform_destroy(self, instance: Board) -> Board:
         # При удалении доски помечаем ее как is_deleted,
         # «удаляем» категории, обновляем статус целей
         with transaction.atomic():
@@ -161,6 +199,9 @@ class BoardView(RetrieveUpdateDestroyAPIView):
 
 
 class BoardListView(ListAPIView):
+    """
+    get_queryset method is overwritten for provide only boards the user is a member of
+    """
     queryset = Board.objects.all()
     serializer_class = BoardListSerializer
     permission_classes = [BoardPermissions]
@@ -170,7 +211,7 @@ class BoardListView(ListAPIView):
 
     #  Почему встроенная в BoardPermissions проверка аутентефикации не проходит
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         # Обратите внимание на фильтрацию – она идет через participants
         return Board.objects.filter(participants__user=self.request.user, is_deleted=False)
 

@@ -1,12 +1,18 @@
 from django.db import transaction
+from django.db.models import QuerySet
 from rest_framework import serializers
 
+import goals
 from core.models import User
 from core.serializers import ProfileInfoSerializer
 from goals.models import GoalCategory, Goal, GoalComment, BoardParticipant, Board
 
 
 class GoalCategoryCreateSerializer(serializers.ModelSerializer):
+    # TODO убрать возможность создать категорию уже удаленной
+    """
+    If BoardParticipant.Role is the owner or writer it creates the category
+    """
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
@@ -14,10 +20,11 @@ class GoalCategoryCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created", "updated", "user")
         fields = "__all__"
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> GoalCategory:
         user = validated_data.get("user")
         board = validated_data.get("board")
-        if BoardParticipant.objects.filter(user=user, board=board, role__in=[BoardParticipant.Role.owner, BoardParticipant.Role.writer]):
+        if BoardParticipant.objects.filter(user=user, board=board, role__in=[BoardParticipant.Role.owner,
+                                                                             BoardParticipant.Role.writer]):
             category = GoalCategory.objects.create(**validated_data)
             return category
         else:
@@ -25,6 +32,9 @@ class GoalCategoryCreateSerializer(serializers.ModelSerializer):
 
 
 class GoalCategorySerializer(serializers.ModelSerializer):
+    """
+    Default serializer with serialized user field
+    """
     user = ProfileInfoSerializer(read_only=True)
 
     class Meta:
@@ -34,6 +44,11 @@ class GoalCategorySerializer(serializers.ModelSerializer):
 
 
 class GoalCreateSerializer(serializers.ModelSerializer):
+    """
+    If BoardParticipant.Role is owner or writer of Goal.category
+    and Goal.category.is_deleted is False, it creates goal
+    else raises ValidationError
+    """
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
@@ -50,9 +65,11 @@ class GoalCreateSerializer(serializers.ModelSerializer):
 
         return value
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> Goal:
         user = validated_data.get("user")
         category = validated_data.get("category")  # нужно ли здесь поставить проверку, что категория с таким id есть?
+        if category is None:
+            raise serializers.ValidationError("PERMISSION DENIED! TRY BETTER NEXT TIME")
         board = GoalCategory.objects.get(pk=category.id).board
         if BoardParticipant.objects.filter(user=user, board=board, role__in=[BoardParticipant.Role.owner,
                                                                              BoardParticipant.Role.writer]):
@@ -72,6 +89,10 @@ class GoalSerializer(serializers.ModelSerializer):
 
 
 class GoalCommentCreateSerializer(serializers.ModelSerializer):
+    """
+    If BoardParticipant.Role is owner or writer of Comment.goal.category it creates goal
+    else raises ValidationError
+    """
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
@@ -79,9 +100,11 @@ class GoalCommentCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created", "updated")
         fields = "__all__"
 
-    def create(self, validated_data):  # TODO переделать это нормально и во вьюшках queryset тоже
+    def create(self, validated_data: dict) -> GoalComment:  # TODO переделать это нормально и во вьюшках queryset тоже
         user = validated_data.get("user")
         goal = validated_data.get("goal")
+        if goal is None:
+            raise serializers.ValidationError("PERMISSION DENIED! TRY BETTER NEXT TIME")
         category = Goal.objects.get(pk=goal.id).category  # нужно ли здесь поставить проверку, что категория с таким id есть?
         board = GoalCategory.objects.get(pk=category.id).board
         if BoardParticipant.objects.filter(user=user, board=board, role__in=[BoardParticipant.Role.owner,
@@ -93,6 +116,7 @@ class GoalCommentCreateSerializer(serializers.ModelSerializer):
 
 
 class GoalCommentSerializer(serializers.ModelSerializer):
+    """Default serializer with serialized user field"""
     user = ProfileInfoSerializer(read_only=True)
     # goal = GoalSerializer(read_only=True)
 
@@ -103,6 +127,7 @@ class GoalCommentSerializer(serializers.ModelSerializer):
 
 
 class BoardCreateSerializer(serializers.ModelSerializer):
+    """Creates Board obj and BoardParticipant obj with given user, board and Role.owner"""
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
@@ -110,7 +135,7 @@ class BoardCreateSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created", "updated")
         fields = "__all__"
 
-    def create(self, validated_data):
+    def create(self, validated_data: dict) -> Board:
         user = validated_data.pop("user")
         board = Board.objects.create(**validated_data)
         BoardParticipant.objects.create(
@@ -120,6 +145,10 @@ class BoardCreateSerializer(serializers.ModelSerializer):
 
 
 class BoardParticipantSerializer(serializers.ModelSerializer):
+    """
+    Default serializer with user saving by user.username
+    and checking if the role belongs to BoardParticipant.Role check
+    """
     role = serializers.ChoiceField(
         required=True, choices=BoardParticipant.Role.choices
     )
@@ -134,6 +163,9 @@ class BoardParticipantSerializer(serializers.ModelSerializer):
 
 
 class BoardSerializer(serializers.ModelSerializer):
+    """
+    The custom update method makes possible to add new users to an existing board
+    """
     participants = BoardParticipantSerializer(many=True)
     user = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
@@ -142,7 +174,7 @@ class BoardSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ("id", "created", "updated")
 
-    def update(self, instance, validated_data):
+    def update(self, instance: Board, validated_data: dict) -> Board:
         owner = validated_data.pop("user")
         new_participants = validated_data.pop("participants")
         new_by_id = {part["user"].id: part for part in new_participants}
@@ -169,7 +201,6 @@ class BoardSerializer(serializers.ModelSerializer):
 
             instance.title = validated_data["title"]
             instance.save()
-
         return instance
 
 

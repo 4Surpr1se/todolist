@@ -1,5 +1,7 @@
+from typing import Union
+
 from django.contrib.auth import authenticate, login, logout
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse, HttpResponse, HttpRequest
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie, csrf_protect
@@ -9,10 +11,11 @@ from rest_framework import urls
 from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveUpdateAPIView, RetrieveUpdateDestroyAPIView, \
     UpdateAPIView, DestroyAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from django.db.models import Q, F
+from django.db.models import Q, F, QuerySet
 from rest_framework.decorators import action
 from django.middleware.csrf import get_token
 from django.middleware.csrf import CsrfViewMiddleware
@@ -33,7 +36,8 @@ class LocationViewSet(ModelViewSet):  # TODO НАЙТИ СПОСОБ СДЕЛА�
     serializer_class = UserGetSerializer
 
     # @action(detail=False, methods=['get'])
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
+        """if action is a list handles query params"""
         if self.action == 'list':
             queryset = User.objects.all()
             if username := self.request.GET.get('username'):
@@ -58,7 +62,8 @@ class LocationViewSet(ModelViewSet):  # TODO НАЙТИ СПОСОБ СДЕЛА�
             return super().get_queryset()
     # super().create()
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Union[type[UserCreateSerializer], type[UserGetSerializer]]:  # TODO Норм тайпинг?
+        """serializer depending on the method"""
         if self.action == 'create':
             return UserCreateSerializer
         else:
@@ -104,9 +109,9 @@ class LocationViewSet(ModelViewSet):  # TODO НАЙТИ СПОСОБ СДЕЛА�
 @method_decorator(csrf_exempt, name='dispatch')
 class AuthenticationCreateAPI(CreateAPIView, DestroyAPIView):
     # TODO Разобраться в этой еб*тор*и получше
-    #
+    """implementing user authentication/login system"""
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: Request, *args, **kwargs) -> JsonResponse:
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(request, username=username, password=password)
@@ -120,60 +125,44 @@ class AuthenticationCreateAPI(CreateAPIView, DestroyAPIView):
             return JsonResponse(UserGetSerializer(user).data, safe=False)
 
         else:
-            raise exceptions.NotAuthenticated #TODO правильный экспешион?
+            raise exceptions.NotAuthenticated  # TODO правильный экспешион?
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Request, *args, **kwargs) -> JsonResponse:
         logout(request)
         return JsonResponse({'status': 'succeed'}, status=200, safe=False)
 
 
 class PasswordReset(UpdateAPIView):
+    """redefining get_object method to get user.id from session token
+    (django by default tries to find pk in web path)"""
     serializer_class = ResetPasswordSerializer
     queryset = User.objects.all()
-    # super().get_object()
-    # def get_queryset(self):
-    #     print(self.request.user.pk)
-    #
-    #     return User.objects.get(pk=self.request.user.pk)
 
-    def get_object(self):
+    def get_object(self) -> User:
         queryset = self.filter_queryset(self.get_queryset())
         obj = queryset.get(pk=self.request.user.pk)
         self.check_object_permissions(self.request, obj)
 
         return obj
-    # super().get_queryset()
-    # super().update()
-    #
-    # super().get_object()
-    # def update(self, request, *args, **kwargs):
-    #
-    # super().partial_update()
-    # super().partial_update()
 
-        # TODO включить swagger первым делом и настроить urls нормально
 
 # TODO Как я эту **** обошел? Создал кастом класс, который не чекает csrf, но надо нормально понять что он делает и вернуть его обратно
 # @method_decorator(csrf_exempt, name='dispatch')
 class UserRetrieveUpdateDestroyAPIView(RetrieveUpdateDestroyAPIView):
+    """ implementing user logout view
+     and redefining get_object method to get user.id from session token
+     (same as we did in PasswordReset view)"""
     queryset = User.objects.all()
     serializer_class = ProfileInfoSerializer
     permission_classes = [IsAuthenticated, ]
 
-    def destroy(self, request, *args, **kwargs):
+    def destroy(self, request: Request, *args, **kwargs) -> JsonResponse:
         logout(request)
         return JsonResponse({'status': 'succeed'}, status=200, safe=False)
 
-    def get_object(self):
+    def get_object(self) -> User:
         queryset = self.filter_queryset(self.get_queryset())
         obj = queryset.get(pk=self.request.user.pk)
         self.check_object_permissions(self.request, obj)
 
         return obj
-    # authentication_classes = [SessionAuthentication, ]
-
-
-
-
-
-

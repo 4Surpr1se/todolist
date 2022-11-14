@@ -5,6 +5,9 @@ from core.models import User
 
 
 class DatesModelMixin(models.Model):
+    """created: using auto_now_add renders the field un-editable in the admin
+     that's why more preferred way is define it by our own
+     updated: using whenever any changes with object happens"""
     class Meta:
         abstract = True
 
@@ -19,6 +22,7 @@ class DatesModelMixin(models.Model):
 
 
 class Board(DatesModelMixin):
+    """Board model"""
     class Meta:
         verbose_name = "Доска"
         verbose_name_plural = "Доски"
@@ -28,6 +32,7 @@ class Board(DatesModelMixin):
 
 
 class GoalCategory(DatesModelMixin):
+    """GoalCategory model"""
     class Meta:
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
@@ -57,6 +62,7 @@ class Priority(models.IntegerChoices):
 
 
 class Goal(DatesModelMixin):
+    """Goal model with choices fields status and priority"""
     class Meta:
         verbose_name = "Цель"
         verbose_name_plural = "Цели"
@@ -91,6 +97,8 @@ class GoalComment(DatesModelMixin):
 
 
 class BoardParticipant(DatesModelMixin):
+    """model for OneToOne relation between Board and User
+     with CRUD permissions for Board model"""
     class Meta:
         unique_together = ("board", "user")
         verbose_name = "Участник"
