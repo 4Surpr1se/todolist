@@ -2,7 +2,7 @@
 ______
 ## Description
 ______
-**This is fully complete calendar with front-end and...**
+**This is fully complete calendar with front-end and CI/CD, located on molenin3.ga**
 _____
 ## Requirments
 _____
@@ -13,7 +13,9 @@ _____
 
 ## Installing
 _____
-`pip install -r requirments.txt`
+`pip install -r requirments.txt or simply use same docker-compose-server` 
 _____
 
-
+## Note
+_____
+`All other descriptions is in the code`
