@@ -1,6 +1,5 @@
 from django.db import transaction
 from django.db.models import QuerySet
-from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.generics import CreateAPIView, ListAPIView, RetrieveUpdateDestroyAPIView
@@ -220,11 +219,3 @@ class BoardCreateView(CreateAPIView):
     model = Board
     serializer_class = BoardCreateSerializer
     permission_classes = [BoardPermissions]
-    # pagination_class = LimitOffsetPagination
-    # # filter_backends = [
-    # #     DjangoFilterBackend,
-    # #     filters.OrderingFilter,
-    # # ]
-    # # filterset_class = GoalCommentFilter
-    # ordering_fields = ["title"]
-    # ordering = ["title"]

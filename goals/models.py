@@ -8,6 +8,7 @@ class DatesModelMixin(models.Model):
     """created: using auto_now_add renders the field un-editable in the admin
      that's why more preferred way is define it by our own
      updated: using whenever any changes with object happens"""
+
     class Meta:
         abstract = True
 
@@ -23,6 +24,7 @@ class DatesModelMixin(models.Model):
 
 class Board(DatesModelMixin):
     """Board model"""
+
     class Meta:
         verbose_name = "Доска"
         verbose_name_plural = "Доски"
@@ -30,9 +32,13 @@ class Board(DatesModelMixin):
     title = models.CharField(verbose_name="Название", max_length=255)
     is_deleted = models.BooleanField(verbose_name="Удалена", default=False)
 
+    def __str__(self):
+        return self.title
+
 
 class GoalCategory(DatesModelMixin):
     """GoalCategory model"""
+
     class Meta:
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
@@ -63,9 +69,11 @@ class Priority(models.IntegerChoices):
 
 class Goal(DatesModelMixin):
     """Goal model with choices fields status and priority"""
+
     class Meta:
         verbose_name = "Цель"
         verbose_name_plural = "Цели"
+
     user = models.ForeignKey(User, verbose_name="Пользователь", on_delete=models.PROTECT, null=True)
     title = models.CharField(verbose_name="Название", max_length=255)
     description = models.CharField(verbose_name="Описание", max_length=255)
@@ -84,6 +92,7 @@ class Goal(DatesModelMixin):
 
 
 class GoalComment(DatesModelMixin):
+
     class Meta:
         verbose_name = "Комментарий"
         verbose_name_plural = "Комментарии"

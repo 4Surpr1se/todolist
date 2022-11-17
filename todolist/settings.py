@@ -11,12 +11,9 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 from pathlib import Path
-from core.SessionAuthenticationCustom import SessionAuthenticationCustom
-import django
+
 import environ
 import os
-# from django.contrib.auth.backends import ModelBackend
-# from goals.permissions import BoardPermissions
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -138,7 +135,7 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
 }
 
-APPEND_SLASH = False # чтобы работал фронтэнд
+APPEND_SLASH = False  # чтобы работал фронтэнд
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/

@@ -1,7 +1,11 @@
 from django.contrib import admin
 
-# Register your models here.
-from core.models import User, Eeee
+from core.models import User
 
-admin.site.register(User)
 
+class UserAdmin(admin.ModelAdmin):
+    list_display = ('username', 'date_joined', 'last_login')
+    readonly_fields = ('date_joined', 'last_login')
+
+
+admin.site.register(User, UserAdmin)

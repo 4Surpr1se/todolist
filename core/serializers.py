@@ -1,6 +1,4 @@
-from typing import Any
-
-from rest_framework import serializers, exceptions
+from rest_framework import serializers
 import django.contrib.auth.password_validation as validators
 
 from core.models import User
@@ -15,8 +13,8 @@ class UserGetSerializer(serializers.ModelSerializer):
 class UserCreateSerializer(serializers.ModelSerializer):
     """creating new write_only variable for password confirmation
      and validating password by default django password validators"""
-
-    password = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    password_repeat = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
@@ -25,12 +23,8 @@ class UserCreateSerializer(serializers.ModelSerializer):
                         'last_name': {'required': False},
                         'email': {'required': False}}
 
-    password_repeat = serializers.CharField(write_only=True)
-    # def validate_username(self, data): # Похоже через validate_ + имя поля можно валидировать что-угодно
-    #     a = 1
-    #     return 33
-
-    def validate_password(self, data: str) -> str:
+    @staticmethod
+    def validate_password(data: str) -> str:
         validators.validate_password(password=data, user=User)
         return data
 
@@ -44,6 +38,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class ProfileInfoSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = User
         fields = ("id", "username", "first_name", "last_name", "email")
@@ -54,14 +49,14 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
     else raises error"""
     old_password = serializers.CharField(write_only=True, required=True)
     new_password = serializers.CharField(write_only=True, required=True)
-    password = serializers.CharField(read_only=True)  # TODO переделать покрасивше
+    password = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
         fields = ('old_password', 'new_password', 'password')
 
-    # super().is_valid()
-    def validate_new_password(self, data: str) -> str:
+    @staticmethod
+    def validate_new_password(data: str) -> str:
         validators.validate_password(password=data, user=User)
 
         return data
@@ -71,6 +66,5 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
             instance.set_password(validated_data['new_password'])
             instance.save()
             return instance
-
         else:
-            raise serializers.ValidationError({"old_password": "password is uncorrected"})
+            raise serializers.ValidationError({"old_password": "Password is uncorrected"}, code=403)

@@ -1,15 +1,12 @@
 from django.db import transaction
-from django.db.models import QuerySet
 from rest_framework import serializers
 
-import goals
 from core.models import User
 from core.serializers import ProfileInfoSerializer
 from goals.models import GoalCategory, Goal, GoalComment, BoardParticipant, Board
 
 
 class GoalCategoryCreateSerializer(serializers.ModelSerializer):
-    # TODO убрать возможность создать категорию уже удаленной
     """
     If BoardParticipant.Role is the owner or writer it creates the category
     """
@@ -17,18 +14,20 @@ class GoalCategoryCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GoalCategory
-        read_only_fields = ("id", "created", "updated", "user")
+        read_only_fields = ("id", "created", "updated", "user", "is_deleted")
         fields = "__all__"
 
     def create(self, validated_data: dict) -> GoalCategory:
         user = validated_data.get("user")
         board = validated_data.get("board")
-        if BoardParticipant.objects.filter(user=user, board=board, role__in=[BoardParticipant.Role.owner,
-                                                                             BoardParticipant.Role.writer]):
+        if BoardParticipant.objects.filter(user=user, board=board,
+                                           role__in=[BoardParticipant.Role.owner,
+                                                     BoardParticipant.Role.writer]):
             category = GoalCategory.objects.create(**validated_data)
             return category
         else:
-            raise serializers.ValidationError("PERMISSION DENIED! NOT THAT COOL ANYMORE HA?")
+            raise serializers.ValidationError({"board": "PERMISSION DENIED! You dont have enough rights to create"
+                                                        " category in board with this id"}, code=403)
 
 
 class GoalCategorySerializer(serializers.ModelSerializer):
@@ -53,35 +52,33 @@ class GoalCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Goal
-        read_only_fields = ("id", "created", "updated")
+        read_only_fields = ("id", "created", "updated", "is_deleted")
         fields = "__all__"
 
-    def validate_category(self, value):
+    @staticmethod
+    def validate_category(value):
         if value.is_deleted:
             raise serializers.ValidationError("not allowed in deleted category")
-
-        # if value.user != self.context["request"].user:
-        #     raise serializers.ValidationError("not owner of category")
 
         return value
 
     def create(self, validated_data: dict) -> Goal:
         user = validated_data.get("user")
-        category = validated_data.get("category")  # нужно ли здесь поставить проверку, что категория с таким id есть?
-        if category is None:
-            raise serializers.ValidationError("PERMISSION DENIED! TRY BETTER NEXT TIME")
+        category = validated_data.get("category")
         board = GoalCategory.objects.get(pk=category.id).board
-        if BoardParticipant.objects.filter(user=user, board=board, role__in=[BoardParticipant.Role.owner,
-                                                                             BoardParticipant.Role.writer]):
+
+        if BoardParticipant.objects.filter(user=user, board=board,
+                                           role__in=[BoardParticipant.Role.owner,
+                                                     BoardParticipant.Role.writer]):
             goal = Goal.objects.create(**validated_data)
             return goal
+
         else:
-            raise serializers.ValidationError("PERMISSION DENIED! TRY BETTER NEXT TIME")
+            raise serializers.ValidationError({"category": "PERMISSION DENIED! You dont have enough rights to create"
+                                                           " goal in category with this id"}, code=403)
 
 
 class GoalSerializer(serializers.ModelSerializer):
-    # category = GoalCategorySerializer(read_only=True)
-
     class Meta:
         model = Goal
         fields = "__all__"
@@ -103,22 +100,23 @@ class GoalCommentCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data: dict) -> GoalComment:  # TODO переделать это нормально и во вьюшках queryset тоже
         user = validated_data.get("user")
         goal = validated_data.get("goal")
-        if goal is None:
-            raise serializers.ValidationError("PERMISSION DENIED! TRY BETTER NEXT TIME")
-        category = Goal.objects.get(pk=goal.id).category  # нужно ли здесь поставить проверку, что категория с таким id есть?
+
+        category = Goal.objects.get(pk=goal.id).category
         board = GoalCategory.objects.get(pk=category.id).board
-        if BoardParticipant.objects.filter(user=user, board=board, role__in=[BoardParticipant.Role.owner,
-                                                                             BoardParticipant.Role.writer]):
+
+        if BoardParticipant.objects.filter(user=user, board=board,
+                                           role__in=[BoardParticipant.Role.owner,
+                                                     BoardParticipant.Role.writer]):
             comment = GoalComment.objects.create(**validated_data)
             return comment
         else:
-            raise serializers.ValidationError("PERMISSION DENIED!!! U HAVE NO WORD HERE")
+            raise serializers.ValidationError({"goal": "PERMISSION DENIED! You dont have enough rights to create"
+                                                       " comment in goal with this id"}, code=403)
 
 
 class GoalCommentSerializer(serializers.ModelSerializer):
     """Default serializer with serialized user field"""
     user = ProfileInfoSerializer(read_only=True)
-    # goal = GoalSerializer(read_only=True)
 
     class Meta:
         model = GoalComment
@@ -132,7 +130,7 @@ class BoardCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Board
-        read_only_fields = ("id", "created", "updated")
+        read_only_fields = ("id", "created", "updated", "is_deleted")
         fields = "__all__"
 
     def create(self, validated_data: dict) -> Board:
@@ -208,5 +206,3 @@ class BoardListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Board
         fields = "__all__"
-
-

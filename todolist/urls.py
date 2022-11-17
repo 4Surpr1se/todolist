@@ -15,26 +15,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework import routers
-from django.contrib.auth import login
-from django.contrib.auth.views import LoginView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-
-from core.views import LocationViewSet, AuthenticationCreateAPI, UserRetrieveUpdateDestroyAPIView, PasswordReset  # , UserAPIView
-
-router = routers.SimpleRouter(trailing_slash=False)
-router.register('core/signup', LocationViewSet)
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('location/', UserAPIView.as_view())
-    path('core/login', AuthenticationCreateAPI.as_view()),
-    # path('core/login/', LoginView.as_view()),
-    path('core/profile', UserRetrieveUpdateDestroyAPIView.as_view()),
-    path('core/update_password', PasswordReset.as_view()),
+
+    path("core/", include("core.urls")),
     path("goals/", include("goals.urls")),
 
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-] + router.urls
+]
