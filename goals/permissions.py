@@ -23,3 +23,4 @@ class BoardPermissions(permissions.BasePermission):
         return BoardParticipant.objects.filter(
             user=request.user, board=obj, role=BoardParticipant.Role.owner
         ).exists()
+#
