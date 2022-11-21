@@ -65,9 +65,10 @@ class GoalCategoryView(RetrieveUpdateDestroyAPIView):
         return GoalCategory.objects.filter(board__participants__user=self.request.user,
                                            is_deleted=False)
 
-    def perform_destroy(self, instance: Board) -> GoalCategory:
+    def perform_destroy(self, instance: GoalCategory) -> GoalCategory:
         instance.is_deleted = True
         instance.save()
+        # map(lambda x: setattr(x, 'is_deleted', True), Goal.objects.get(category=instance))
         return instance
 
 
@@ -181,12 +182,9 @@ class BoardView(RetrieveUpdateDestroyAPIView):
     serializer_class = BoardSerializer
 
     def get_queryset(self) -> QuerySet:
-        # Обратите внимание на фильтрацию – она идет через participants
         return Board.objects.filter(participants__user=self.request.user, is_deleted=False)
 
     def perform_destroy(self, instance: Board) -> Board:
-        # При удалении доски помечаем ее как is_deleted,
-        # «удаляем» категории, обновляем статус целей
         with transaction.atomic():
             instance.is_deleted = True
             instance.save()
@@ -211,11 +209,10 @@ class BoardListView(ListAPIView):
     #  Почему встроенная в BoardPermissions проверка аутентефикации не проходит
 
     def get_queryset(self) -> QuerySet:
-        # Обратите внимание на фильтрацию – она идет через participants
         return Board.objects.filter(participants__user=self.request.user, is_deleted=False)
 
 
 class BoardCreateView(CreateAPIView):
     model = Board
     serializer_class = BoardCreateSerializer
-    permission_classes = [BoardPermissions]
+    permission_classes = [IsAuthenticated, BoardPermissions]

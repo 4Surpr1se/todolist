@@ -6,7 +6,6 @@ jobs:
     steps:
       - name: clone code
         uses: actions/checkout@v2
-      #прописать чтобы не билдил, а просто брал, наверное просто убрать отседова?
       - name: docker build
         run: docker build -t 4surpr1se/calendar_api:$GITHUB_REF_NAME-$GITHUB_RUN_ID .
       - name: docker login
@@ -18,8 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_and_push
     env:
-      # Здесь мы в секретах гитхаба добавили еще два секрета DB_PASSWORD и DB_NAME
-      # и пробросили их в переменные окружения
       DB_USER: postgres
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_NAME: ${{ secrets.DB_NAME }}
@@ -35,13 +32,10 @@ jobs:
       - name: clone files to server
         uses: appleboy/scp-action@master
         with:
-            # Эти значения надо вписать в секреты гитхабаdd
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
-          # Указываем, какие файлы копировать
           source: "deploy/docker-compose.yaml,deploy/.env"
-          # Место на виртуальной машине, куда скопируются файлы
           target: "calendar"
           strip_components: 1
       - name: run docker-compose
@@ -49,8 +43,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-            # Переходим в директорию и запускаем через sudo команду docker-compose up
+          password: ${{ secrets.SSH_PASSWORD }}# Переходим в директорию и запускаем через sudo команду docker-compose up
           script: |
             cd calendar
             echo ${{ secrets.SSH_PASSWORD }} | sudo -S docker-compose up -d

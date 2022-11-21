@@ -23,7 +23,7 @@ services:
         condition: service_healthy
     command: python manage.py migrate
   postgres:
-    environment: # Я уже здесь изменил значения на те, что актуальны на локале
+    environment:
       POSTGRES_USER: olenin
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: todolist_db
