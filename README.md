@@ -2,7 +2,7 @@
 ______
 ## Description
 ______
-**This is fully complete calendar with front-end and CI/CD, located on website molenin3.ga**
+**This is fully complete calendar with front-end and CI/CD, ~~located on website molenin3.ga~~**
 _____
 ## Requirments
 _____
